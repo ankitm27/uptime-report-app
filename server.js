@@ -4,6 +4,13 @@ const elasticSearch = require('elasticsearch');
 const http = require("http");
 const request = require('request');
 const cmd = require('node-cmd');
+const elasticSearchFile = require('./elasticSearch.js');
+
+var client = new elasticSearch.Client({
+    host: 'localhost:9200'
+});
+
+GLOBAL.client = client;
 
 let curlRequest = (website) => {
     return new Promise((resolve, reject) => {
@@ -11,7 +18,7 @@ let curlRequest = (website) => {
             if (err) {
                 return resolve(err);
             } else {
-                data  = data.split(" ")[1]
+                data = data.split(" ")[1];
                 return resolve(data);
             }
         })
@@ -26,13 +33,32 @@ app.get('/checkuptime', (req, res) => {
     promiseCall.push(curlRequest("http://" + websiteName));
     Promise.all(promiseCall)
         .then((result) => {
-            if(result.indexOf('200') > -1){
-                res.send({"statusCode":200,"status":"success",data:200});
-            }else{
-                res.send({"statusCode":200,"status":"error",data:404});
+            if (result.indexOf('200') > -1) {
+                elasticSearchFile.createData(websiteName, '200');
+                res.send({"statusCode": 200, "status": "success", data: 200});
+            } else {
+                elasticSearchFile.createData(websiteName, '404');
+                res.send({"statusCode": 200, "status": "error", data: 404});
             }
         }).catch((err) => {
-            res.send({"statusCode":500,"status":"error",data:404});
+            res.send({"statusCode": 500, "status": "error", data: 404});
+        })
+});
+
+
+app.get('/getdata', (req, res) => {
+    let data = {};
+    data['websiteName'] = req.query.websiteName;
+    data["statusCode"] = req.query.statusCode;
+    elasticSearchFile.searchData(data)
+        .then((result) => {
+            let resultData = [];
+            result.hits.hits.forEach(function (hit) {
+                resultData.push(hit);
+            });
+            return res.send(resultData);
+        }).catch((err) => {
+            return res.send(err);
         })
 });
 
