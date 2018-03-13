@@ -27,12 +27,14 @@ let curlRequest = (website) => {
 
 
 app.get('/checkuptime', (req, res) => {
-    const websiteName = req.query.websitename;
+    const websiteName = req.query.websiteName;
+    console.log("websiteName",websiteName);
     let promiseCall = [];
     promiseCall.push(curlRequest("https://" + websiteName));
     promiseCall.push(curlRequest("http://" + websiteName));
     Promise.all(promiseCall)
         .then((result) => {
+            console.log("result",result);
             if (result.indexOf('200') > -1) {
                 elasticSearchFile.createData(websiteName, '200');
                 res.send({"statusCode": 200, "status": "success", data: 200});
@@ -50,6 +52,12 @@ app.get('/getdata', (req, res) => {
     let data = {};
     data['websiteName'] = req.query.websiteName;
     data["statusCode"] = req.query.statusCode;
+    if(req.query.startTime){
+        data["startTime"] = req.query.startTime;
+    }
+    if(req.query.endTime){
+        data["endTime"] = req.query.endTime;
+    }
     elasticSearchFile.searchData(data)
         .then((result) => {
             let resultData = [];

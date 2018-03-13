@@ -1,15 +1,13 @@
 let elasticSearch = {
     createData: (name, data) => {
-        console.log("name", name);
-        console.log("data", data);
         client.index({
-            index: 'status',
+            index: 'status2',
             id: parseInt(new Date().getTime()),
-            type: 'status',
+            type: 'status2',
             body: {
-                "name":name,
+                "name": name,
                 "data": data,
-                //"createdAt":new Date()
+                "timeStamp": parseInt(new Date().getTime())
             }
         }, function (err, resp, status) {
             if (err) {
@@ -20,61 +18,53 @@ let elasticSearch = {
         });
     },
     searchData: (data) => {
-        //let query = {};
-        //query['index'] = 'status';
-        //query["type"] = 'status';
-        ////query["id"] = "1520921088184";
-        //if (data.statusCode) {
-        //    query['body'] = {
-        //        query: {
-        //            "range": {
-        //                //"data": data.statusCode,
-        //                "id": {
-        //                    "gte":"1520925506762",
-        //                    "lte":"1520925519272"
-        //                }
-        //            }
-        //        }
-        //    }
-        //}
-        //console.log("query", JSON.stringify(query));
-        //return new Promise((resolve, reject) => {
-        //    client.search(query, function (err, result, status) {
-        //        if (err) {
-        //            console.log("err", err);
-        //            return reject(err);
-        //        }
-        //        else {
-        //            //console.log("result",result);
-        //            return resolve(result);
-        //        }
-        //    });
-        //})
-
-        client.search({
-            index: "status",
-            //size : 100,
-            //from: 0,
-            type:"status",
-            body: {
-                query: {
-                    filtered:{
-                        filter:{
-                            bool:{
-                                must: [{"range":{"id":{"gte":"1520925506762","lt":"1520925519272"}}}]
-                            }
-                        }
+        let query = {};
+        query['index'] = 'status2';
+        query["type"] = 'status2';
+        let must = [];
+        let should = [];
+        data.statusCode = JSON.parse(data.statusCode);
+        if (data.statusCode) {
+            data.statusCode.forEach((status) => {
+                should.push({term:{'data':status}})
+            });
+        }
+        if (data.startTime) {
+            must.push({
+                range: {
+                    timeStamp: {
+                        'gte': data.startTime
                     }
                 }
+            })
+        }
+        if (data.endTime) {
+            must.push({
+                range: {
+                    timeStamp: {
+                        'lte': data.endTime
+                    }
+                }
+            })
+        }
+        query['body'] = {
+            "stored_fields":["_source"],
+            query: {
+                bool: {
+                    must: must,
+                    should: should
+                }
             }
-        },function(err,result){
-            if(err){
-                console.log("err",err);
-                //return reject(err)
-            }else{
-                console.log("result",result);
-                //return resolve(result);
-            }
+        };
+        return new Promise((resolve, reject) => {
+            client.search(query, function (err, result, status) {
+                if (err) {
+                    return reject(err);
+                }
+                else {
+                    return resolve(result);
+                }
+            });
         })
     }
 };
