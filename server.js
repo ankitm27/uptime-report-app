@@ -5,6 +5,7 @@ const http = require("http");
 const request = require('request');
 const cmd = require('node-cmd');
 const elasticSearchFile = require('./elasticSearch.js');
+const _ = require('underscore');
 
 var client = new elasticSearch.Client({
     host: 'localhost:9200'
@@ -62,7 +63,7 @@ app.get('/getdata', (req, res) => {
         .then((result) => {
             let resultData = [];
             result.hits.hits.forEach(function (hit) {
-                resultData.push(hit);
+                resultData.push(_.pick(hit._source,'data','timeStamp'));
             });
             return res.send(resultData);
         }).catch((err) => {

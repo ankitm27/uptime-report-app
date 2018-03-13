@@ -23,8 +23,8 @@ let elasticSearch = {
         query["type"] = 'status2';
         let must = [];
         let should = [];
-        data.statusCode = JSON.parse(data.statusCode);
         if (data.statusCode) {
+            data.statusCode = JSON.parse(data.statusCode);
             data.statusCode.forEach((status) => {
                 should.push({term:{'data':status}})
             });
